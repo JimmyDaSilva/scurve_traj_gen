@@ -123,7 +123,7 @@ void SCurveProfile::compute_curves(){
   while((break_dist_ <= distance_left) && (break_time_>=0)){
     // If v=vmax and a=0, keep going
     if (on_cruise)
-      compute_next_step(0);
+      compute_cruise_step();
     else{
       // if vi > vmax
       if(too_fast_on_start){
@@ -260,6 +260,19 @@ void SCurveProfile::compute_next_step(double j){
   a_vect_.push_back(last_a + j*period_);
   v_vect_.push_back(last_v + last_a*period_ + j/2.0 * period_*period_);
   s_vect_.push_back(last_s + last_v*period_ + last_a/2.0*period_*period_ + j/6.0*period_*period_*period_);
+  t_vect_.push_back(last_t + period_);
+}
+
+void SCurveProfile::compute_cruise_step(){
+  double last_a = a_vect_[a_vect_.size()-1];
+  double last_v = v_vect_[v_vect_.size()-1];
+  double last_s = s_vect_[s_vect_.size()-1];
+  double last_t = t_vect_[t_vect_.size()-1];
+  
+  j_vect_.push_back(0);
+  a_vect_.push_back(0);
+  v_vect_.push_back(last_v);
+  s_vect_.push_back(last_s + last_v*period_);
   t_vect_.push_back(last_t + period_);
 }
 

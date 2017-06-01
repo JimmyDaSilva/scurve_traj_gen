@@ -30,6 +30,7 @@ class SCurveProfile{
     
     void compute_curves();
     void compute_next_step(double j);
+    void compute_cruise_step();
     void compute_breaking();
 
     double compute_phase_distance(double time_in_phase, double j_phase, double phase_acc_start, double phase_vel_start);
