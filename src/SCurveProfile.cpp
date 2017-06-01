@@ -77,10 +77,18 @@ void SCurveProfile::set_a_final ( double a_final ) {
 
 void SCurveProfile::set_v_max ( double v_max ) {
   v_max_ = std::abs(v_max);
+  if (vf_>0)
+    vf_ = std::min(vf_, v_max_);
+  else
+    vf_ = std::max(vf_, -v_max_);
 }
 
 void SCurveProfile::set_a_max ( double a_max ) {
   a_max_ = std::abs(a_max);
+  if (af_>0)
+    af_ = std::min(af_, a_max_);
+  else
+    af_ = std::max(af_, -a_max_);
 }
 
 void SCurveProfile::set_j_max ( double j_max ) {
