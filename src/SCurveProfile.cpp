@@ -112,6 +112,14 @@ void SCurveProfile::compute_curves(){
   t_vect_.clear();
   t_vect_.push_back(0.0);
   
+  if(ai_ > a_max_)
+    while (a_vect_[a_vect_.size()-1]-j_max_*period_>a_max_)
+      compute_next_step(-j_max_);
+    
+  if(ai_ < -a_max_)
+    while (a_vect_[a_vect_.size()-1]+j_max_*period_<-a_max_)
+      compute_next_step(j_max_);
+  
   double distance_left = sf_-si_;
   compute_breaking();
 //   std::cout << "breaking_distance init : " <<break_dist_ <<std::endl;
