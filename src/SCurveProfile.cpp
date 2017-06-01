@@ -109,7 +109,7 @@ void SCurveProfile::compute_curves(){
 //   std::cout << "breaking_distance init : " <<break_dist_ <<std::endl;
   
   bool started_breaking = false;
-  bool too_fast_on_start = ((vi_ + ai_*ai_/(2*j_max_) > v_max_) && (ai_>0)) ||( vi_ >v_max_);
+  bool too_fast_on_start = ((vi_ + ai_*ai_/(2*j_max_) > v_max_) && (ai_>=0)) ||((vi_ - ai_*ai_/(2*j_max_) >v_max_) && (ai_<0));
   bool on_cruise = (vi_ == v_max_) && (ai_ == 0);
   
   while((break_dist_ <= distance_left) && (break_time_>=0)){
@@ -183,7 +183,8 @@ void SCurveProfile::compute_curves(){
 //   std::cout << "break distance is : " <<break_dist_ <<std::endl;
   
   while(t_vect_[t_vect_.size()-1] <=t_final){
-    if ((vf_ >= v_vect_[v_vect_.size()-1] + (af_*af_-a_vect_[a_vect_.size()-1]*a_vect_[a_vect_.size()-1])/(2*j_max_)) && (a_vect_[a_vect_.size()-1]<0))
+    if ( (vf_ >= v_vect_[v_vect_.size()-1] + (af_*af_-a_vect_[a_vect_.size()-1]*a_vect_[a_vect_.size()-1])/(2*j_max_) && (a_vect_[a_vect_.size()-1]<0)) 
+      || (vf_ >= v_vect_[v_vect_.size()-1] + (-af_*af_+a_vect_[a_vect_.size()-1]*a_vect_[a_vect_.size()-1])/(2*j_max_) && (a_vect_[a_vect_.size()-1]>0)))
       compute_next_step(j_max_);
     else{
       if (a_vect_[a_vect_.size()-1] > -a_max_)
