@@ -37,8 +37,12 @@ void SCurveProfile::config (double s_init, double vi_init, double a_init, double
     vf_ = std::max(vf_, -v_max_);
   
   // af cannot be over amax or below -amax
-  if (af_>0)
-    af_ = std::min(af_, a_max_);
+  if (af_>0){
+    if (vf_>0)
+      af_ = std::min(af_, a_max_);
+    else
+      af_ = std::min(af_, std::min(a_max_, std::sqrt((v_max_+vf_)*2*j_max_)));
+  }
   else
     af_ = std::max(af_, -a_max_);
 }
@@ -65,12 +69,24 @@ void SCurveProfile::set_v_final ( double v_final ) {
     vf_ = std::min(v_final, v_max_);
   else
     vf_ = std::max(v_final, -v_max_);
+  if (af_>0){
+    if (vf_>0)
+      af_ = std::min(af_, a_max_);
+    else
+      af_ = std::min(af_, std::min(a_max_, std::sqrt((v_max_+vf_)*2*j_max_) ) );
+  }
+  else
+    af_ = std::max(af_, -a_max_);
 }
 
 void SCurveProfile::set_a_final ( double a_final ) {
   // af cannot be over amax or below -amax
-  if (a_final>0)
-    af_ = std::min(a_final, a_max_);
+  if (a_final>0){
+    if (vf_>0)
+      af_ = std::min(a_final, a_max_);
+    else
+      af_ = std::min(a_final, std::min(a_max_, std::sqrt((v_max_+vf_)*2*j_max_) ) );
+  }
   else
     af_ = std::max(a_final, -a_max_);
 }
@@ -81,12 +97,24 @@ void SCurveProfile::set_v_max ( double v_max ) {
     vf_ = std::min(vf_, v_max_);
   else
     vf_ = std::max(vf_, -v_max_);
+  if (af_>0){
+    if (vf_>0)
+      af_ = std::min(af_, a_max_);
+    else
+      af_ = std::min(af_, std::min(a_max_, std::sqrt((v_max_+vf_)*2*j_max_) ) );
+  }
+  else
+    af_ = std::max(af_, -a_max_);
 }
 
 void SCurveProfile::set_a_max ( double a_max ) {
   a_max_ = std::abs(a_max);
-  if (af_>0)
-    af_ = std::min(af_, a_max_);
+  if (af_>0){
+    if (vf_>0)
+      af_ = std::min(af_, a_max_);
+    else
+      af_ = std::min(af_, std::min(a_max_, std::sqrt((v_max_+vf_)*2*j_max_)));
+  }
   else
     af_ = std::max(af_, -a_max_);
 }
@@ -122,7 +150,6 @@ void SCurveProfile::compute_curves(){
   
   double distance_left = sf_-si_;
   compute_breaking();
-//   std::cout << "breaking_distance init : " <<break_dist_ <<std::endl;
   
   bool started_breaking = false;
   bool too_fast_on_start = ((vi_ + ai_*ai_/(2*j_max_) > v_max_) && (ai_>=0)) ||((vi_ - ai_*ai_/(2*j_max_) >v_max_) && (ai_<0));
@@ -185,23 +212,23 @@ void SCurveProfile::compute_curves(){
     distance_left = sf_ - s_vect_[s_vect_.size()-1];
   }
   
-//   std::cout << "switching! Time is : " <<t_vect_[t_vect_.size()-1] <<std::endl;
-  
-  if(break_dist_>1.1 * distance_left){
-//     std::cerr << "Cannot reach goal... Breaking HARD!" << std::endl;
-    af_ = 0;
-    vf_ = 0;
-  }
-  
   compute_breaking();
   double t_final = t_vect_[t_vect_.size()-1] + break_time_;
-//   std::cout << "break time is : " <<break_time_ <<std::endl;
-//   std::cout << "break distance is : " <<break_dist_ <<std::endl;
+  
+  // true when starting last concave phase
+  started_breaking = false;
   
   while(t_vect_[t_vect_.size()-1] <=t_final){
+    // Stop when goal is reached
+    if (started_breaking && ((a_vect_[a_vect_.size()-1] < af_ && a_vect_[a_vect_.size()-2] > af_) ||(a_vect_[a_vect_.size()-1] > af_ && a_vect_[a_vect_.size()-2] < af_))){
+      compute_next_step(0);
+      break;
+    }
     if ( (vf_ >= v_vect_[v_vect_.size()-1] + (af_*af_-a_vect_[a_vect_.size()-1]*a_vect_[a_vect_.size()-1])/(2*j_max_) && (a_vect_[a_vect_.size()-1]<0)) 
-      || (vf_ >= v_vect_[v_vect_.size()-1] + (-af_*af_+a_vect_[a_vect_.size()-1]*a_vect_[a_vect_.size()-1])/(2*j_max_) && (a_vect_[a_vect_.size()-1]>0)))
+      || (vf_ >= v_vect_[v_vect_.size()-1] + (-af_*af_+a_vect_[a_vect_.size()-1]*a_vect_[a_vect_.size()-1])/(2*j_max_) && (a_vect_[a_vect_.size()-1]>0))){
       compute_next_step(j_max_);
+      started_breaking = true;
+    }
     else{
       if (a_vect_[a_vect_.size()-1] > -a_max_)
         compute_next_step(-j_max_);
@@ -209,7 +236,6 @@ void SCurveProfile::compute_curves(){
         compute_next_step(0);
     }
   }
-
 }
 
 void SCurveProfile::compute_breaking(){
@@ -243,9 +269,9 @@ void SCurveProfile::compute_breaking(){
     t_convexe_fall = ideal_t + ac/j_max_;
   }
   
-  if((t_concave_fall<0) || (t_concave_fall<0)){
-    break_time_ = -1;
-    break_dist_ = -1;
+  if((t_concave_fall<0) || (t_convexe_fall<0)){
+    break_time_ = 0;
+    break_dist_ = 0;
     return;
   }
   
