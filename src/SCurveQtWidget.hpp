@@ -69,6 +69,10 @@ class SCurveQtWidget: public QWidget
     QChart *createVelocityChart() const;
     QChart *createAccelerationChart() const;
     QChart *createJerkChart() const;
+    
+    void update_sliders();
+    void re_print_curves();
+    
   public slots:
     void callback_si_text_edit ( QString text );
     void callback_slider_si(int a);
@@ -80,7 +84,7 @@ class SCurveQtWidget: public QWidget
     void callback_slider_vmax(int a);
     void callback_slider_amax(int a);
     void callback_slider_jmax(int a);
-    void re_print_curves();
+    
 
   private:
     SCurveProfile s_curve;
@@ -93,6 +97,7 @@ class SCurveQtWidget: public QWidget
     QLineSeries* v_zero_series, *v_zero_series_y;
     QLineSeries* a_zero_series, *a_zero_series_y;
     QLineSeries* j_zero_series, *j_zero_series_y;
+    QLineSeries* v_min_series;
     QLineSeries* a_min_series;
     QLineSeries* j_min_series;
     QLineSeries* v_max_series;
@@ -100,6 +105,14 @@ class SCurveQtWidget: public QWidget
     QLineSeries* j_max_series;
     QLineEdit* line_edit;
     QSlider* slider_si;
+    QSlider* slider_vi;
+    QSlider* slider_ai;
+    QSlider* slider_sf;
+    QSlider* slider_vf;
+    QSlider* slider_af;
+    QSlider* slider_vmax;
+    QSlider* slider_amax;
+    QSlider* slider_jmax;
     QScatterSeries* s_bounds, *v_bounds, *a_bounds;
     QChart* s_chart;
     QChart* v_chart;

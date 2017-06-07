@@ -113,6 +113,12 @@ SCurveQtWidget::SCurveQtWidget(QWidget *parent) :
   v_max_series->append(-100, v_max);
   v_max_series->append(100, v_max);
   
+  v_min_series = new QLineSeries();
+  v_min_series->setPen(QPen(Qt::red,1, Qt::DotLine));
+  v_min_series->setUseOpenGL(true);
+  v_min_series->append(-100, -v_max);
+  v_min_series->append(100, -v_max);
+  
   a_max_series = new QLineSeries();
   a_max_series->setPen(QPen(Qt::red,1, Qt::DotLine));
   a_max_series->setUseOpenGL(true);
@@ -158,6 +164,7 @@ SCurveQtWidget::SCurveQtWidget(QWidget *parent) :
   v_chart->addSeries(v_zero_series);
   v_chart->addSeries(v_zero_series_y);
   v_chart->addSeries(v_max_series);
+  v_chart->addSeries(v_min_series);
   v_chart->addSeries(v_bounds);
   v_chart->createDefaultAxes();
   v_chart->setTitle("Velocity");
@@ -194,7 +201,7 @@ SCurveQtWidget::SCurveQtWidget(QWidget *parent) :
   baseLayout->addWidget(chartView, 2, 1);
   m_charts << chartView;
   
-  re_print_curves();
+//   re_print_curves();
   
   // create sliders    
   QGridLayout* sliders_layout = new QGridLayout();
@@ -203,54 +210,54 @@ SCurveQtWidget::SCurveQtWidget(QWidget *parent) :
   sliders_layout->addWidget(new QLabel("Max"),0,2);
   
   slider_si = new QSlider(Qt::Horizontal);
-  slider_si->setRange(0,100);
+  slider_si->setRange(-100,100);
   slider_si->setValue(s_init*100);
   QObject::connect(slider_si,SIGNAL(valueChanged(int)),this,SLOT(callback_slider_si(int)));
   sliders_layout->addWidget(slider_si,1,0);
   
-  QSlider* slider_vi = new QSlider(Qt::Horizontal);
+  slider_vi = new QSlider(Qt::Horizontal);
   slider_vi->setRange(-200,200);
   slider_vi->setValue(v_init*100);
   QObject::connect(slider_vi,SIGNAL(valueChanged(int)),this,SLOT(callback_slider_vi(int)));
   sliders_layout->addWidget(slider_vi,2,0);
   
-  QSlider* slider_ai = new QSlider(Qt::Horizontal);
+  slider_ai = new QSlider(Qt::Horizontal);
   slider_ai->setRange(-200,200);
   slider_ai->setValue(a_init*100);
   QObject::connect(slider_ai,SIGNAL(valueChanged(int)),this,SLOT(callback_slider_ai(int)));
   sliders_layout->addWidget(slider_ai,3,0);
   
-  QSlider* slider_sf = new QSlider(Qt::Horizontal);
+  slider_sf = new QSlider(Qt::Horizontal);
   slider_sf->setRange(100,300);
   slider_sf->setValue(s_final*100);
   QObject::connect(slider_sf,SIGNAL(valueChanged(int)),this,SLOT(callback_slider_sf(int)));
   sliders_layout->addWidget(slider_sf,1,1);
   
-  QSlider* slider_vf = new QSlider(Qt::Horizontal);
+  slider_vf = new QSlider(Qt::Horizontal);
   slider_vf->setRange(-200,200);
   slider_vf->setValue(v_final*100);
   QObject::connect(slider_vf,SIGNAL(valueChanged(int)),this,SLOT(callback_slider_vf(int)));
   sliders_layout->addWidget(slider_vf,2,1);
   
-  QSlider* slider_af = new QSlider(Qt::Horizontal);
+  slider_af = new QSlider(Qt::Horizontal);
   slider_af->setRange(-200,200);
   slider_af->setValue(a_final*100);
   QObject::connect(slider_af,SIGNAL(valueChanged(int)),this,SLOT(callback_slider_af(int)));
   sliders_layout->addWidget(slider_af,3,1);
   
-  QSlider* slider_vmax = new QSlider(Qt::Horizontal);
+  slider_vmax = new QSlider(Qt::Horizontal);
   slider_vmax->setRange(100,200);
   slider_vmax->setValue(v_max*100);
   QObject::connect(slider_vmax,SIGNAL(valueChanged(int)),this,SLOT(callback_slider_vmax(int)));
   sliders_layout->addWidget(slider_vmax,1,2);
   
-  QSlider* slider_amax = new QSlider(Qt::Horizontal);
+  slider_amax = new QSlider(Qt::Horizontal);
   slider_amax->setRange(100,300);
   slider_amax->setValue(a_max*100);
   QObject::connect(slider_amax,SIGNAL(valueChanged(int)),this,SLOT(callback_slider_amax(int)));
   sliders_layout->addWidget(slider_amax,2,2);
   
-  QSlider* slider_jmax = new QSlider(Qt::Horizontal);
+  slider_jmax = new QSlider(Qt::Horizontal);
   slider_jmax->setRange(500,10000);
   slider_jmax->setValue(j_max*100);
   QObject::connect(slider_jmax,SIGNAL(valueChanged(int)),this,SLOT(callback_slider_jmax(int)));
@@ -278,6 +285,8 @@ SCurveQtWidget::SCurveQtWidget(QWidget *parent) :
   // Set defaults
   m_antialiasCheckBox->setChecked(true);
   updateUI();
+  
+  re_print_curves();
 }
 
 SCurveQtWidget::~SCurveQtWidget()
@@ -361,6 +370,10 @@ void SCurveQtWidget::re_print_curves(){
       }
     }
 
+    v_min_series->clear();
+    v_min_series->append(-100, -v_max);
+    v_min_series->append(100, -v_max);
+    
     v_max_series->clear();
     v_max_series->append(-100, v_max);
     v_max_series->append(100, v_max);
@@ -402,20 +415,32 @@ void SCurveQtWidget::re_print_curves(){
     j_chart->axisX()->setRange(-0.1,s_curve.t_vect_[s_curve.t_vect_.size()-1]+0.1);
     j_chart->axisY()->setRange(-j_max*1.2,j_max*1.2);
   }
+  update_sliders();
+}
+
+void SCurveQtWidget::update_sliders(){
+  slider_si->setValue(s_curve.si_*100);
+  slider_vi->setValue(s_curve.vi_*100);
+  slider_ai->setValue(s_curve.ai_*100);
+  slider_sf->setValue(s_curve.sf_*100);
+  slider_vf->setValue(s_curve.vf_*100);
+  slider_af->setValue(s_curve.af_*100);
+  slider_vmax->setValue(s_curve.v_max_*100);
+  slider_amax->setValue(s_curve.a_max_*100);
+  slider_jmax->setValue(s_curve.j_max_*100);
 }
 
 void SCurveQtWidget::callback_si_text_edit ( QString text ) {
   s_init = text.toDouble();
   s_curve.set_s_init(s_init);
   re_print_curves();
-  slider_si->setValue(s_init*100);
 }
 
 void SCurveQtWidget::callback_slider_si ( int a ) {
   s_init = a /100.0;
   s_curve.set_s_init(s_init);
-  re_print_curves();
   line_edit->setText(QString::number(s_init));
+  re_print_curves();
 }
 void SCurveQtWidget::callback_slider_vi ( int a ) {
   v_init = a /100.0;
