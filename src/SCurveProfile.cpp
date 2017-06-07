@@ -1,4 +1,5 @@
 #include "SCurveProfile.hpp"
+#include <iostream>
 
 SCurveProfile::SCurveProfile ( double s_init, double vi_init, double a_init, double s_final, double v_final, double a_final, double v_max, double a_max, double j_max ) {
   si_ = s_init;
@@ -76,7 +77,7 @@ void SCurveProfile::set_v_final ( double v_final ) {
       af_ = std::min(af_, std::min(a_max_, std::sqrt((v_max_+vf_)*2*j_max_) ) );
   }
   else
-    af_ = std::max(af_, -a_max_);
+    af_ = std::max(af_, std::max(-std::sqrt((v_max_-vf_)*2*j_max_), -a_max_));
 }
 
 void SCurveProfile::set_a_final ( double a_final ) {
@@ -88,7 +89,7 @@ void SCurveProfile::set_a_final ( double a_final ) {
       af_ = std::min(a_final, std::min(a_max_, std::sqrt((v_max_+vf_)*2*j_max_) ) );
   }
   else
-    af_ = std::max(a_final, -a_max_);
+    af_ = std::max(a_final, std::max(-std::sqrt((v_max_-vf_)*2*j_max_), -a_max_));
 }
 
 void SCurveProfile::set_v_max ( double v_max ) {
@@ -104,7 +105,7 @@ void SCurveProfile::set_v_max ( double v_max ) {
       af_ = std::min(af_, std::min(a_max_, std::sqrt((v_max_+vf_)*2*j_max_) ) );
   }
   else
-    af_ = std::max(af_, -a_max_);
+    af_ = std::max(af_, std::max(-std::sqrt((v_max_-vf_)*2*j_max_), -a_max_));
 }
 
 void SCurveProfile::set_a_max ( double a_max ) {
@@ -116,7 +117,7 @@ void SCurveProfile::set_a_max ( double a_max ) {
       af_ = std::min(af_, std::min(a_max_, std::sqrt((v_max_+vf_)*2*j_max_)));
   }
   else
-    af_ = std::max(af_, -a_max_);
+    af_ = std::max(af_, std::max(-std::sqrt((v_max_-vf_)*2*j_max_), -a_max_));
 }
 
 void SCurveProfile::set_j_max ( double j_max ) {
@@ -140,6 +141,8 @@ void SCurveProfile::compute_curves(){
   t_vect_.clear();
   t_vect_.push_back(0.0);
   
+
+  
   if(ai_ > a_max_)
     while (a_vect_[a_vect_.size()-1]-j_max_*period_>a_max_)
       compute_next_step(-j_max_);
@@ -147,9 +150,18 @@ void SCurveProfile::compute_curves(){
   if(ai_ < -a_max_)
     while (a_vect_[a_vect_.size()-1]+j_max_*period_<-a_max_)
       compute_next_step(j_max_);
+    
+
   
   double distance_left = sf_-si_;
   compute_breaking();
+  
+  // If target cannot be reach, break hard
+  if(break_dist_ > distance_left){
+    vf_ = 0;
+    af_ = 0;
+    compute_breaking();
+  }
   
   bool started_breaking = false;
   bool too_fast_on_start = ((vi_ + ai_*ai_/(2*j_max_) > v_max_) && (ai_>=0)) ||((vi_ - ai_*ai_/(2*j_max_) >v_max_) && (ai_<0));
@@ -249,39 +261,29 @@ void SCurveProfile::compute_breaking(){
   if (t_ramp_fall <0){
     t_ramp_fall = 0;
     
-    double vi_bis, vf_bis;
-    if(af_>=0)
-      vf_bis = vf_ - af_*af_/(2*j_max_);
-    else
-      vf_bis = vf_ + af_*af_/(2*j_max_);
+    if(4*j_max_*(vc-vf_)+2*af_*af_+2*ac*ac >0){
+      t_convexe_fall = ac/j_max_ + sqrt(4*j_max_*(vc-vf_)+2*af_*af_+2*ac*ac)/(2*j_max_);
+      t_concave_fall = (af_ -ac)/j_max_ + t_convexe_fall;
+    }
+    else{
+      t_concave_fall = 0;
+      t_convexe_fall = 0;
+    }
     
-    if(ac>=0)
-      vi_bis = vc + ac*ac/(2*j_max_);
-    else
-      vi_bis = vc - ac*ac/(2*j_max_);
+    if(t_concave_fall<=0)
+      t_concave_fall = 0;
+  
+    if(t_convexe_fall<0)
+      t_convexe_fall = 0;
     
-    // TODO !!!!!!!!!!!!!!! what does the negative sign mean
-    double ideal_t = 0;
-    if (vi_bis-vf_bis>0)
-      ideal_t = std::sqrt((vi_bis-vf_bis)/j_max_);
-     
-    t_concave_fall = ideal_t + af_/j_max_;
-    t_convexe_fall = ideal_t + ac/j_max_;
+    break_time_ = t_convexe_fall+t_concave_fall;
+    break_dist_ = compute_phase_distance(t_convexe_fall, -j_max_, ac, vc) + compute_phase_distance(t_concave_fall, j_max_, ac - j_max_*t_convexe_fall, vc + ac*t_convexe_fall -j_max_/2 *t_convexe_fall*t_convexe_fall); 
   }
-  
-  if((t_concave_fall<0) || (t_convexe_fall<0)){
-    break_time_ = 0;
-    break_dist_ = 0;
-    return;
+  else{
+    break_time_ = t_convexe_fall+t_ramp_fall+t_concave_fall;
+    break_dist_ = compute_convexe_distance(ac, vc, -a_max_) + compute_ramp_fall_distance(vc+ac*t_convexe_fall-j_max_/2*t_convexe_fall*t_convexe_fall,vc,vf_,ac,-a_max_,af_) 
+      + compute_concave_distance(-a_max_,vc+ac*t_convexe_fall-j_max_/2*t_convexe_fall*t_convexe_fall-t_ramp_fall*a_max_, af_) ;
   }
-  
-  break_time_ = t_convexe_fall+t_ramp_fall+t_concave_fall;
-  
-  if (t_ramp_fall == 0)
-    break_dist_ = compute_convexe_distance(ac,vc,ac-j_max_*t_convexe_fall) +compute_concave_distance(ac-j_max_*t_convexe_fall,vc+ac*t_convexe_fall-j_max_/2*t_convexe_fall*t_convexe_fall,af_);
-  else
-    break_dist_ = compute_convexe_distance(ac, vc, -a_max_) + compute_ramp_fall_distance(vc+ac*t_convexe_fall-j_max_/2*t_convexe_fall*t_convexe_fall,vc,vf_,ac,-a_max_,af_) + compute_concave_distance(-a_max_,vc+ac*t_convexe_fall-j_max_/2*t_convexe_fall*t_convexe_fall-t_ramp_fall*a_max_, af_) ;
-  
 }
 
 void SCurveProfile::compute_next_step(double j){
