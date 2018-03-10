@@ -1,17 +1,18 @@
 #ifndef SCURVETRAJGEN_SCURVEPROFILE_HPP_
 #define SCURVETRAJGEN_SCURVEPROFILE_HPP_
 
+#include <vector>
 #include <algorithm>
 
-class SCurveProfile{  
+class SCurveProfile{
   // public functions
   public:
     // default constructor
     SCurveProfile();
-    
+
     // constructor with initial parameters
     SCurveProfile(double s_init, double v_init, double a_init, double s_final, double v_final, double a_final, double v_max, double a_max, double j_max);
-    
+
     // change configuration
     void config (double s_init, double v_init, double a_init, double s_final, double v_final, double a_final, double v_max, double a_max, double j_max);
     void set_s_init (double s_init);
@@ -24,10 +25,10 @@ class SCurveProfile{
     void set_a_max (double a_max);
     void set_j_max (double j_max);
 
-    
+
     // config period
     void set_period ( double period );
-    
+
     void compute_curves();
     void compute_next_step(double j);
     void compute_cruise_step();
@@ -44,7 +45,7 @@ class SCurveProfile{
     double compute_ramp_fall_time(double fall_vel_start, double fall_vel_final ,double fall_acc_start, double fall_acc, double fall_acc_final );
     double compute_cruise_distance(double cruise_vel, double phase_pos_start, double phase_pos_final);
     double compute_cruise_time(double cruise_vel, double phase_pos_start, double phase_pos_final);
-  
+
   // public variables
   public:
     double period_;
@@ -59,9 +60,8 @@ class SCurveProfile{
     double af_;
     double break_dist_;
     double break_time_;
-    
+
     std::vector<double> t_vect_, s_vect_, v_vect_, a_vect_, j_vect_;
 };
 
 #endif //SCURVETRAJGEN_SCURVEPROFILE_HPP_
-

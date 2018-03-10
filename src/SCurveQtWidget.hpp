@@ -1,7 +1,7 @@
 #ifndef SCURVETRAJGEN_SCURVEQTWIDGET_HPP_
 #define SCURVETRAJGEN_SCURVEQTWIDGET_HPP_
 
-#include "SCurveProfile.hpp"
+#include "scurve_traj_gen/SCurveProfile.hpp"
 
 #include <QtWidgets/QWidget>
 #include <QtCharts/QChartGlobal>
@@ -69,10 +69,10 @@ class SCurveQtWidget: public QWidget
     QChart *createVelocityChart() const;
     QChart *createAccelerationChart() const;
     QChart *createJerkChart() const;
-    
+
     void update_sliders();
     void re_print_curves();
-    
+
   public slots:
     void callback_si_text_edit ( QString text );
     void callback_slider_si(int a);
@@ -84,7 +84,7 @@ class SCurveQtWidget: public QWidget
     void callback_slider_vmax(int a);
     void callback_slider_amax(int a);
     void callback_slider_jmax(int a);
-    
+
 
   private:
     SCurveProfile s_curve;
