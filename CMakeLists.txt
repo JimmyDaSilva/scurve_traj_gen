@@ -4,41 +4,37 @@ project(scurve_traj_gen)
 ## Add support for C++11, supported in ROS Kinetic and newer
 add_definitions(-std=c++11)
 
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rospy
-  std_msgs
-)
+# Add catkin support
+find_package(catkin QUIET)
+if(${catkin_FOUND})
+    catkin_package(
+        INCLUDE_DIRS include
+        LIBRARIES SCurveProfile
+    )
+else()
+    set(CATKIN_PACKAGE_INCLUDE_DESTINATION include/${PROJECT_NAME})
+    set(CATKIN_PACKAGE_LIB_DESTINATION lib)
+    set(CATKIN_PACKAGE_BIN_DESTINATION bin)
+endif()
 
-## Hardcoded QT5 path ... Bad !
-set(CMAKE_PREFIX_PATH "/opt/Qt/5.8/gcc_64/lib/cmake")
-
-find_package(Qt5 REQUIRED COMPONENTS Core Gui Charts Widgets)
-# Instruct CMake to run moc automatically when needed.
-set(CMAKE_AUTOMOC ON)
-
-catkin_package(
- INCLUDE_DIRS include
-#  LIBRARIES scurve_traj_gen
-#  CATKIN_DEPENDS roscpp rospy std_msgs
-#  DEPENDS system_lib
-)
-
-###########
-## Build ##
-###########
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-)
-
+# Compile the SCurveProfile library
+include_directories(include)
 add_library(SCurveProfile src/SCurveProfile.cpp)
+install(TARGETS SCurveProfile DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 
-add_executable(SCurveQtViewer src/SCurveQtViewer.cpp src/SCurveQtWidget.cpp)
+# Compile viewer if found
+find_package(Qt5 QUIET COMPONENTS Core Gui Charts Widgets)
+if(${Qt5_FOUND})
+    message(STATUS "Building SCurveQtViewer with qt5")
 
-target_link_libraries(SCurveQtViewer
-  ${catkin_LIBRARIES}
-  SCurveProfile
-  Qt5::Charts
-  Qt5::Widgets
-)
+    set(CMAKE_INCLUDE_CURRENT_DIR ON)
+    set(CMAKE_AUTOMOC_COMPILER_PREDEFINES OFF)
+    set(CMAKE_AUTOMOC ON)
+    
+    add_executable(SCurveQtViewer src/SCurveQtViewer.cpp src/SCurveQtWidget.cpp)
+
+    target_link_libraries(SCurveQtViewer SCurveProfile Qt5::Charts Qt5::Widgets)
+    install(TARGETS SCurveQtViewer DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+else()
+    message(STATUS "qt5 not found, not building SCurveQtViewer")
+endif()
